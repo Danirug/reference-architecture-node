@@ -144,6 +144,54 @@ describe('API de Tasks', () => {
     const res = await app.inject({ method: 'DELETE', url: `/tasks/${UNKNOWN_ID}` });
     expect(res.statusCode).toBe(404);
   });
+
+    it.each(['   ', 'A'.repeat(201)])(
+    'rejects an invalid title through domain validation (%#)',
+    async (title) => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/tasks',
+        payload: { title },
+      });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.json<{ error: string }>().error).toBe(
+        'InvalidTaskTitleError',
+      );
+    },
+  );
+
+  it('uses domain normalization for long descriptions', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/tasks',
+      payload: {
+        title: '  Review architecture  ',
+        description: 'A'.repeat(2001),
+      },
+    });
+
+    expect(res.statusCode).toBe(201);
+
+    const body = res.json<{
+      id: string;
+      title: string;
+      description: string;
+    }>();
+
+    expect(body.title).toBe('Review architecture');
+    expect(body.description).toBe('A'.repeat(2000));
+
+    const saved = await app.inject({
+      method: 'GET',
+      url: `/tasks/${body.id}`,
+    });
+
+    expect(saved.statusCode).toBe(200);
+    expect(saved.json<{ description: string }>().description).toBe(
+      'A'.repeat(2000),
+    );
+  });
 });
 
 describe('buildServer', () => {

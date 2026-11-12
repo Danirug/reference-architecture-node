@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 export const createTaskBodySchema = z.object({
-  title: z.string().trim().min(1).max(200),
-  description: z.string().max(2000).optional(),
+  title: z.string(),
+  description: z.string().optional(),
 });
 
 export const taskIdParamsSchema = z.object({
